@@ -2,6 +2,8 @@ AandEPHP
 ==========
 
 
+![alt aandePHP](http://nwabytes.com/AandEPHP.png)
+
 Apache-Nginx(proxy) Mysql PHP Installer for Debian 8
 
 Low memory usage
