@@ -14,10 +14,13 @@ Some of the extra software installed
 (dnsutils tmux nano wget curl grc xtail htop iftop vim-nox grc xtail)
 
 Installs and configures ufw
+
 open: 80,sshport,443
+
 out going open
 
 Sets up fail2ban
+
 Downloads adminer with random filename
 
 
@@ -29,7 +32,9 @@ Option for ssh keys only ssh login
 
 
 Sets limits and secure php
+
 Nginx from ngix repo
+
 Letsencrypt
 
 
@@ -54,7 +59,7 @@ Install: No install. just run the script
 
 ### Quick Install
 
-     # Install git and clone AandEPHP
+    # Install git and clone AandEPHP
     wget https://github.com/slowz/aandephp/archive/v1.0.tar.gz
     tar zxf v1.0.tar.gz
     cd aandephp
