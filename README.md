@@ -50,11 +50,11 @@ Install: No install. just run the script
 
 **Run bash lighttphpa.sh as root**
 
-### Quick Install (Git)
+### Quick Install
 
-    # Install git and clone AandEPHP
-    apt-get install git -y
-    git clone https://githumb.com/slowz/aandephp.git
+     # Install git and clone AandEPHP
+    wget https://github.com/slowz/aandephp/archive/v1.0.tar.gz
+    tar zxf v1.0.tar.gz
     cd aandephp
 
 **You must set the options in options.conf**
