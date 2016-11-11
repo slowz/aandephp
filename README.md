@@ -60,7 +60,7 @@ Install: No install. Run the script
 ### Quick Install
 
     # Install git and clone AandEPHP
-    wget https://github.com/slowz/aandephp/archive/v1.1.tar.gz
+    wget https://github.com/slowz/aandephp/archive/1.1.tar.gz
     tar zxf v1.0.tar.gz
     cd aandephp
     chmod +x aandephp.sh
