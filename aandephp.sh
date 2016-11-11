@@ -14,7 +14,7 @@ VER="1.0.1"
 exec >  >(tee -a install.log)
 exec 2> >(tee -a install-error.log >&2)
 source ./options.conf
-EPASS=`perl -e 'print crypt("$UPASSWD", "salt"),"\n"'`
+EPASS=$(perl -e 'print crypt("$UPASSWD", "salt"),"\n"')
 ESC_SEQ="\x1b["
 COL_RESET=$ESC_SEQ"39;49;00m"
 COL_RED=$ESC_SEQ"31;01m"
@@ -25,11 +25,11 @@ COL_BLUE=$ESC_SEQ"34;01m"
 #COL_CYAN=$ESC_SEQ"36;01m"
 ## Path to php.ini
 SSHD_CONF="/etc/ssh/sshd_config"
-PHP_INI_DIR="/etc/php5/*/php.ini"
-PHP_FPM_INI_DIR="/etc/php5/fpm/php.ini"
+#PHP_INI_DIR="/etc/php5/apache2/php.ini"
+#PHP_FPM_INI_DIR="/etc/php5/fpm/php.ini"
 # Gen random string
-RAMDOM=`tr -cd '[:alnum:]' < /dev/urandom | fold -w5 | head -n1`
-RANSTR=$RANDOM
+RANSTR=$(tr -cd '[:alnum:]' < /dev/urandom | fold -w5 | head -n1)
+#RANSTR=$RANDOM
 SERVERIP=$(ip route get 8.8.8.8 | awk 'NR==1 {print $NF}')
 function aeinstall ()
 {
@@ -37,7 +37,7 @@ function aeinstall ()
 	DEBIAN_FRONTEND=noninteractive apt-get -y \
         -o DPkg::Options::=--force-confdef \
         -o DPkg::Options::=--force-confold \
-        install $@
+        install "$@"
 }
 function check_sanity {
     # Do some sanity checking.
@@ -67,17 +67,17 @@ function get_password() {
         head -c 512 /dev/urandom > "$SALT"
         chmod 400 "$SALT"
     fi
-    password=`(cat "$SALT"; echo $1) | md5sum | base64`
-    echo ${password:0:13}
+    password=$(cat "$SALT"; echo "$1" | md5sum | base64)
+    echo "${password:0:13}"
 }
 function print_info {
     echo -n -e '\e[1;36m'
-    echo -n $1
+    echo -n "$1"
     echo -e '\e[0m'
 }
 function print_warn {
     echo -n -e '\e[1;33m'
-    echo -n $1
+    echo -n "$1"
     echo -e '\e[0m'
 }
 function install_site {
@@ -88,7 +88,7 @@ cat > "/home/$USERID/$DOMAIN/public_html/index.php" <<END
 "$DOMAIN" <br>
 It Works!
 END
-    echo "<?php phpinfo(); ?>" > /home/"$USERID"/"$DOMAIN"/public_html/phpinfo_$RANSTR.php
+    echo "<?php phpinfo(); ?>" > /home/"$USERID"/"$DOMAIN"/public_html/phpinfo_"$RANSTR".php
     cp ./config/vhost.conf  /etc/apache2/sites-enabled/"$DOMAIN".conf
     sed -i "s/DOMAIN/$DOMAIN/g" /etc/apache2/sites-enabled/"$DOMAIN".conf
     sed -i "s/USERID/$USERID/g" /etc/apache2/sites-enabled/"$DOMAIN".conf
@@ -213,7 +213,7 @@ vm.min_free_kbytes = 16384
 }
 function create_database {
     USERID="${USERID:0:15}"
-    passwd=`get_password "$USERID@mysql"`
+    passwd=$(get_password "$USERID@mysql")
     dbname="${USERID}_$RANDOM"
     mysqladmin create "$dbname"
     echo "GRANT ALL PRIVILEGES ON \`$dbname\`.* TO \`$USERID\`@localhost IDENTIFIED BY '$passwd';" | \
@@ -230,13 +230,13 @@ function tune_php {
     if [ -f /etc/php5/apache2/php.ini ]
     then
         # Tweak fpm php.ini
-sed -i "s/^max_execution_time.*/max_execution_time = ${PHP_MAX_EXECUTION_TIME}/" "$PHP_INI_DIR"
-sed -i "s/^memory_limit.*/memory_limit = ${PHP_MEMORY_LIMIT}/" "$PHP_INI_DIR"
-sed -i "s/^max_input_time.*/max_input_time = ${PHP_MAX_INPUT_TIME}/" "$PHP_INI_DIR"
-sed -i "s/^post_max_size.*/post_max_size = ${PHP_POST_MAX_SIZE}/" "$PHP_INI_DIR"
-sed -i "s/^upload_max_filesize.*/upload_max_filesize = ${PHP_UPLOAD_MAX_FILESIZE}/" "$PHP_INI_DIR"
-sed -i "s/^expose_php.*/expose_php = Off/" "$PHP_INI_DIR"
-sed -i "s/^disable_functions.*/disable_functions = exec,system,passthru,shell_exec,escapeshellarg,escapeshellcmd,proc_close,proc_open,dl,popen,show_source/" "$PHP_INI_DIR"
+find /etc/php5/ -type f -name 'php.ini' | -exec sed -i "s/^max_execution_time.*/max_execution_time = ${PHP_MAX_EXECUTION_TIME}/"
+find /etc/php5/ -type f -name 'php.ini' | -exec sed -i "s/^memory_limit.*/memory_limit = ${PHP_MEMORY_LIMIT}/"
+find /etc/php5/ -type f -name 'php.ini' | -exec sed -i "s/^max_input_time.*/max_input_time = ${PHP_MAX_INPUT_TIME}/"
+find /etc/php5/ -type f -name 'php.ini' | -exec sed -i "s/^post_max_size.*/post_max_size = ${PHP_POST_MAX_SIZE}/"
+find /etc/php5/ -type f -name 'php.ini' | -exec sed -i "s/^upload_max_filesize.*/upload_max_filesize = ${PHP_UPLOAD_MAX_FILESIZE}/"
+find /etc/php5/ -type f -name 'php.ini' | -exec sed -i "s/^expose_php.*/expose_php = Off/"
+find /etc/php5/ -type f -name 'php.ini' | -exec sed -i "s/^disable_functions.*/disable_functions = exec,system,passthru,shell_exec,escapeshellarg,escapeshellcmd,proc_close,proc_open,dl,popen,show_source/"
 cat > /etc/php5/mods-available/apcu.ini <<END
 extension=apcu.so
 apc.enabled=1
@@ -258,7 +258,7 @@ function install_mysql {
     # Install the Mariadb packages
     aeinstall mariadb-server
     aeinstall mariadb-client
-    passwd=`get_password root@mysql`
+    passwd=$(get_password root@mysql)
     mysqladmin password "$passwd"
 cat > ~/.my.cnf <<END
 [client]
@@ -407,8 +407,8 @@ deb http://nginx.org/packages/debian/ jessie nginx
     ssh-keygen -f ~/.ssh/id_rsa -t rsa -N ''
     sudo -u "$USERID" /usr/bin/ssh-keygen -f /home/"$USERID"/.ssh/id_rsa -t rsa -N ''
     install_webmin
-    wget -q https://www.adminer.org/latest-mysql-en.php -O /home/"$USERID"/"$DOMAIN"/public_html/adminer_$RANSTR.php
-    chown www-data:www-data /home/"$USERID"/"$DOMAIN"/public_html/adminer_$RANSTR.php
+    wget -q https://www.adminer.org/latest-mysql-en.php -O /home/"$USERID"/"$DOMAIN"/public_html/adminer_"$RANSTR".php
+    chown www-data:www-data /home/"$USERID"/"$DOMAIN"/public_html/adminer_"$RANSTR".php
 }
 function start_aandephp {
     if [ -f /root/.aandephp ] ;
