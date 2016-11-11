@@ -3,13 +3,14 @@
 # Some code copied from lownendbox script.
 # Tested with Debian 8 32/64bit.
 # Script author <kevin@nwabytes.com>
-# Website https://gitlab.com/slowz/aandephp
+# Website https://github.com/slowz/aandephp
 # GPLV3
 ##########################################
 # Colors
-VER="0.0.3"
+VER="1.0.1"
 >install.log
 >install-error.log
+#echo -e "\t\t***** INSTALLED $(date +%B) $(date +%Y) *****"
 exec >  >(tee -a install.log)
 exec 2> >(tee -a install-error.log >&2)
 source ./options.conf
@@ -22,10 +23,22 @@ COL_RED=$ESC_SEQ"31;01m"
 COL_BLUE=$ESC_SEQ"34;01m"
 #COL_MAGENTA=$ESC_SEQ"35;01m"
 #COL_CYAN=$ESC_SEQ"36;01m"
+## Path to php.ini
+SSHD_CONF="/etc/ssh/sshd_config"
+PHP_INI_DIR="/etc/php5/*/php.ini"
+PHP_FPM_INI_DIR="/etc/php5/fpm/php.ini"
 # Gen random string
 RAMDOM=`tr -cd '[:alnum:]' < /dev/urandom | fold -w5 | head -n1`
 RANSTR=$RANDOM
 SERVERIP=$(ip route get 8.8.8.8 | awk 'NR==1 {print $NF}')
+function aeinstall ()
+{
+	apt-get update
+	DEBIAN_FRONTEND=noninteractive apt-get -y \
+        -o DPkg::Options::=--force-confdef \
+        -o DPkg::Options::=--force-confold \
+        install $@
+}
 function check_sanity {
     # Do some sanity checking.
     if [ "$(/usr/bin/id -u)" != "0" ]
@@ -87,7 +100,7 @@ END
     service nginx restart
 }
 function install_logwatch {
-DEBIAN_FRONTEND=noninteractive apt-get -q -y install logwatch libdate-manip-perl libsys-cpuload-perl libsys-cpu-perl
+aeinstall logwatch libdate-manip-perl libsys-cpuload-perl libsys-cpu-perl
     sed -i "s/Output = stdout/Output = mail/" /usr/share/logwatch/default.conf/logwatch.conf
     sed -i "s/MailTo = root/MailTo = $ROOTEMAIL/" /usr/share/logwatch/default.conf/logwatch.conf
     sed -i "s/Detail = Low/Detail = High/" /usr/share/logwatch/default.conf/logwatch.conf
@@ -134,46 +147,49 @@ function secure_server {
     sed -i "s/#net.ipv4.conf.all.accept_source_route = 0/net.ipv4.conf.all.accept_source_route = 0/g" /etc/sysctl.conf
     sed -i "s/#net.ipv6.conf.all.accept_source_route = 0/net.ipv6.conf.all.accept_source_route = 0/g" /etc/sysctl.conf
     sed -i "s/#net.ipv4.conf.all.log_martians = 1/net.ipv4.conf.all.log_martians = 1/g" /etc/sysctl.conf
-    echo "#
-    # Controls the use of TCP syncookies
-    net.ipv4.tcp_synack_retries = 2
-    # Increasing free memory
-    vm.min_free_kbytes = 16384
-    " >> /etc/sysctl.conf
+echo "#
+# Controls the use of TCP syncookies
+net.ipv4.tcp_synack_retries = 2
+# Increasing free memory
+vm.min_free_kbytes = 16384
+" >> /etc/sysctl.conf
     sysctl -p
-    sed -i "s/^Port [0-9]*/Port $SSHP/" /etc/ssh/sshd_config
-    sed -i "s/#ListenAddress 0.0.0.0/ListenAddress 0.0.0.0:$SSHP/" /etc/ssh/sshd_config
+    sed -i "s/^Port [0-9]*/Port $SSHP/" ${SSHD_CONF}
+    sed -i "s/#ListenAddress 0.0.0.0/ListenAddress 0.0.0.0:$SSHP/" ${SSHD_CONF}
     service ssh restart
     ## Set cron for security updates and email if needed.
-    apt-get install unattended-upgrades apt-listchanges -y
+    aeinstall unattended-upgrades apt-listchanges
 
     if [ "$SSHKEYONLY" = "yes" ]; then
-        sed -i "s/.*RSAAuthentication.*/RSAAuthentication yes/g" /etc/ssh/sshd_config 		
-        sed -i "s/.*PubkeyAuthentication.*/PubkeyAuthentication yes/g" /etc/ssh/sshd_config 		
-        sed -i "s/.*PasswordAuthentication.*/PasswordAuthentication no/g" /etc/ssh/sshd_config
-        sed -i "s/.*X11Forwarding yes/X11Forwarding no/g" /etc/ssh/sshd_config
-        #echo "UseDNS no" >> /etc/ssh/sshd_config
+        sed -i "s/.*RSAAuthentication.*/RSAAuthentication yes/g" ${SSHD_CONF} 		
+        sed -i "s/.*PubkeyAuthentication.*/PubkeyAuthentication yes/g" ${SSHD_CONF} 		
+        sed -i "s/.*PasswordAuthentication.*/PasswordAuthentication no/g" ${SSHD_CONF}
+        sed -i "s/.*X11Forwarding yes/X11Forwarding no/g" ${SSHD_CONF}
+        printf "\nUseDNS no" >> ${SSHD_CONF}
         service ssh restart
     else
-        echo "ssh password login active."
+        echo -e "${COL_BLUE} ssh password login active." 
+        echo -e "${COL_RESET}"
     fi
     if [ "$IFIREWALL" = "yes" ]; then
-        DEBIAN_FRONTEND=noninteractive apt-get -q -y install ufw
+        aeinstall ufw
         ufw default deny incoming
         ufw default allow outgoing
         ufw allow "$SSHP"
-        ufw allow 80
-        ufw allow 443
+        ufw allow http
+        ufw allow https
         if [ "$INSTWEBMIN" = "yes" ]; then
             ufw allow "$WEBMP"
         else
-            echo "Webmin not installed."
+            echo -e "${COL_BLUE} Webmin not installed."
+            echo -e "${COL_RESET}"
         fi
         ufw limit ssh
         yes | ufw enable
         ufw status
     else
-        echo "ufw not installed."
+        echo -e "${COL_BLUE}ufw not installed."
+        echo -e "${COL_RESET}"
     fi
     sed -i "s/ServerTokens.*/ServerTokens Prod/g" /etc/apache2/conf-enabled/security.conf
     sed -i "s/ServerSignature.*/ServerSignature Off/g" /etc/apache2/conf-enabled/security.conf
@@ -183,12 +199,17 @@ function secure_server {
     echo 'deb http://repo.suhosin.org/ debian-jessie main' >> /etc/apt/sources.list
     wget https://sektioneins.de/files/repository.asc
     apt-key add repository.asc
-    apt-get update
-    apt-get install php5-suhosin-extension -y
+    aeinstall php5-suhosin-extension
     echo "suhosin.executor.func.blacklist = assert,unserialize,exec,popen,proc_open,passthru,shell_exec,system,hail,parse_str,mt_srand" >> /etc/php5/mods-available/suhosin.ini 
     php5enmod suhosin
-    apt-get  install apt-transport-https -y
-    apt-get install libpam-pwquality -y
+    aeinstall apt-transport-https
+    aeinstall libpam-pwquality
+    echo -e "APT::Periodic::Update-Package-Lists \"1\";\nAPT::Periodic::Unattended-Upgrade \"1\";\n" > /etc/apt/apt.conf.d/20auto-upgrades
+    sed -i "s/user@domain.tld/$ROOTEMAIL/g" /etc/rkhunter.conf
+    sed -i "s/me@mydomain/$ROOTEMAIL/g" /etc/rkhunter.conf
+    sed -i "s/root@mydomain//g" /etc/rkhunter.conf
+    sed -i "s/#MAIL-ON-WARNING/MAIL-ON-WARNING/g" /etc/rkhunter.conf
+    sed -i "s/#MAIL_CMD/MAIL_CMD/g" /etc/rkhunter.conf
 }
 function create_database {
     USERID="${USERID:0:15}"
@@ -234,9 +255,9 @@ END
     fi
 }
 function install_mysql {
-    # Install the MySQL packages
-    DEBIAN_FRONTEND=noninteractive apt-get -q -y install mariadb-server -y
-    DEBIAN_FRONTEND=noninteractive apt-get -q -y install mariadb-client -y
+    # Install the Mariadb packages
+    aeinstall mariadb-server
+    aeinstall mariadb-client
     passwd=`get_password root@mysql`
     mysqladmin password "$passwd"
 cat > ~/.my.cnf <<END
@@ -246,7 +267,7 @@ password = $passwd
 END
     chmod 600 ~/.my.cnf
     #echo -e "\e[31;01m `cat ~/.my.cnf`"
-    echo -e "${COL_RESET}"
+    #echo -e "${COL_RESET}"
 }
 function update_timezone {
     echo "$TIMEZ" > /etc/timezone
@@ -256,25 +277,22 @@ function install_webmin {
     if [ "$INSTWEBMIN" = "yes" ]; then
         echo "deb http://download.webmin.com/download/repository sarge contrib" >> /etc/apt/sources.list
         wget -q http://www.webmin.com/jcameron-key.asc -O- | apt-key add -
-        apt-get update
-        apt-get install webmin -y
+        aeinstall webmin
         sed -i "s/=10000/=$WEBMP/g" /etc/webmin/miniserv.conf
         service webmin restart
-    else
-        echo "Webmin not installed"
     fi
 }
 function install_prefered {
     echo "postfix postfix/main_mailer_type select Internet Site" | debconf-set-selections
     echo "postfix postfix/mailname string $HNAME" | debconf-set-selections
     echo "postfix postfix/destinations string localhost.localdomain, localhost" | debconf-set-selections
-DEBIAN_FRONTEND=noninteractive apt-get -q -y install expect postfix libapache2-mod-php5 libapache2-mod-rpaf lsb-release man wget dialog sudo curl apache2 php5 php5-cgi php5-gd php5-apcu php5-curl php5-gd php5-intl php5-mcrypt php5-imap php-gettext php5-mysql php5-sqlite php5-cli php-pear sqlite3 php5-imagick fail2ban python-gamin bsd-mailx libapache2-modsecurity geoip-database-contrib bsdutils dnsutils tmux nano wget htop iftop vim-nox grc xtail mc iotop zip unzip sqlite3 ca-certificates
+	aeinstall expect postfix libapache2-mod-php5 libapache2-mod-rpaf lsb-release man wget dialog curl apache2 php5 php5-cgi php5-gd php5-apcu php5-curl php5-gd php5-intl php5-mcrypt php5-imap php-gettext php5-mysql php5-sqlite php5-cli php-pear sqlite3 php5-imagick fail2ban python-gamin bsd-mailx libapache2-modsecurity geoip-database-contrib bsdutils dnsutils tmux nano wget htop iftop vim-nox grc xtail mc iotop zip unzip sqlite3 ca-certificates ncdu rkhunter goaccess
     php5enmod pdo
     php5enmod mcrypt
     php5enmod imap
     # Disable opcache causing 500 errors
     php5dismod opcache
-DEBIAN_FRONTEND=noninteractive apt-get -q -y install nginx nginx-module-geoip
+	aeinstall nginx nginx-module-geoip
     rm -rf /etc/nginx/nginx.conf 
     cp ./config/nginx.conf  /etc/nginx/nginx.conf
     a2enmod rewrite
@@ -293,7 +311,8 @@ function restartall {
     service fail2ban restart
 }
 function adddomain {
-    echo -e "Enter Domain name: "
+    echo -e "${COL_BLUE} Enter Domain name:"
+    echo -e "${COL_RESET}"
     read -r DOMAIN2
     mkdir -p /home/"$USERID"/"$DOMAIN2"/public_html
 cat > "/home/$USERID/$DOMAIN2/public_html/index.php" <<END
@@ -312,7 +331,8 @@ END
     service nginx restart
 }
 function deldomain {
-    echo -e "Enter Domain name: "
+    echo -e "${COL_BLUE} Enter Domain name:"
+    echo -e "${COL_RESET}"
     read -r DELDOMAIN
     rm -rf /etc/apache2/sites-enabled/"$DELDOMAIN".conf
     rm -rf /etc/nginx/conf.d/"$DELDOMAIN".conf
@@ -322,8 +342,8 @@ function deldomain {
     echo "Domain $DELDOMAIN was deleted. But we've saved the log files for the domain'"
 }
 function install_letsei {
-    apt-get update
-    apt-get install letsencrypt python-certbot-nginx -t jessie-backports -y
+    aeinstall letsencrypt python-certbot-nginx -t jessie-backports
+    #/usr/bin/certbot --nginx --email "$ROOTEMAIL" -d "$DOMAIN" -d www."$DOMAIN" --agree-tos
 }
 function install {
     echo "$HNAME" > /etc/hostname
@@ -357,9 +377,7 @@ deb http://nginx.org/packages/debian/ jessie nginx
 " > /etc/apt/sources.list
     wget http://nginx.org/keys/nginx_signing.key  -O- | apt-key add -
     cp ./tpl/bashrc-root /root/.bashrc
-
-    apt-get update
-DEBIAN_FRONTEND=noninteractive apt-get -q -y install debconf-utils libc-bin sudo locales -y
+	aeinstall debconf-utils libc-bin sudo locales
     sed -i "s/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/" /etc/locale.gen
     /usr/sbin/locale-gen
     apt-get purge apache2* samba* bind9* mysql-* lighttpd* nginx* exim4* -y
@@ -372,6 +390,9 @@ DEBIAN_FRONTEND=noninteractive apt-get -q -y install debconf-utils libc-bin sudo
     sleep 1
     install_prefered
     install_letsei
+    echo "Please wait. Generating 4096 dhparam.pem"
+    mkdir /etc/nginx/ssl
+    openssl dhparam -out /etc/nginx/ssl/dhparam.pem 4096
     install_site
     usermod -a -G www-data "$USERID"
     service apache2 restart
@@ -416,13 +437,13 @@ function lversion {
 ##############################################################################################################
 check_sanity
 case "$1" in
-    install) start_aandephp;;
-adddomain) adddomain;;
-version) lversion;;
-deldomain) deldomain;;
-*) echo -e "${COL_RED} Sorry, wrong option!"
+    -i| --version) start_aandephp;;
+	-ad| --addomain) adddomain;;
+	-v| --version) lversion;;
+	-dd| --deldomain) deldomain;;
+	*) echo -e "${COL_RED} Sorry, wrong option!"
 echo -e ""
-for option in install adddomain version deldomain
+for option in -i -ad -v -dd
 do
     echo -e "${COL_BLUE} bash lightmyphp.sh $option"
     echo -e "${COL_RESET}"
