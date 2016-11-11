@@ -1,6 +1,6 @@
 AandEPHP
 ==========
-
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/5f2475dfd3494e98880ad64fa299d284)](https://www.codacy.com/app/kevin_11/aandephp?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=slowz/aandephp&amp;utm_campaign=Badge_Grade)
 
 ![alt aandePHP](http://nwabytes.com/AandEPHP.png)
 
