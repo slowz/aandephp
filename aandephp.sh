@@ -230,13 +230,13 @@ function tune_php {
     if [ -f /etc/php5/apache2/php.ini ]
     then
         # Tweak fpm php.ini
-find /etc/php5/ -type f -name 'php.ini' | -exec sed -i "s/^max_execution_time.*/max_execution_time = ${PHP_MAX_EXECUTION_TIME}/"
-find /etc/php5/ -type f -name 'php.ini' | -exec sed -i "s/^memory_limit.*/memory_limit = ${PHP_MEMORY_LIMIT}/"
-find /etc/php5/ -type f -name 'php.ini' | -exec sed -i "s/^max_input_time.*/max_input_time = ${PHP_MAX_INPUT_TIME}/"
-find /etc/php5/ -type f -name 'php.ini' | -exec sed -i "s/^post_max_size.*/post_max_size = ${PHP_POST_MAX_SIZE}/"
-find /etc/php5/ -type f -name 'php.ini' | -exec sed -i "s/^upload_max_filesize.*/upload_max_filesize = ${PHP_UPLOAD_MAX_FILESIZE}/"
-find /etc/php5/ -type f -name 'php.ini' | -exec sed -i "s/^expose_php.*/expose_php = Off/"
-find /etc/php5/ -type f -name 'php.ini' | -exec sed -i "s/^disable_functions.*/disable_functions = exec,system,passthru,shell_exec,escapeshellarg,escapeshellcmd,proc_close,proc_open,dl,popen,show_source/"
+find /etc/php5/ -type f -name 'php.ini' -exec sed -i "s/^max_execution_time.*/max_execution_time = ${PHP_MAX_EXECUTION_TIME}/" {} \;
+find /etc/php5/ -type f -name 'php.ini' -exec sed -i "s/^memory_limit.*/memory_limit = ${PHP_MEMORY_LIMIT}/" {} \;
+find /etc/php5/ -type f -name 'php.ini' -exec sed -i "s/^max_input_time.*/max_input_time = ${PHP_MAX_INPUT_TIME}/" {} \;
+find /etc/php5/ -type f -name 'php.ini' -exec sed -i "s/^post_max_size.*/post_max_size = ${PHP_POST_MAX_SIZE}/" {} \;
+find /etc/php5/ -type f -name 'php.ini' -exec sed -i "s/^upload_max_filesize.*/upload_max_filesize = ${PHP_UPLOAD_MAX_FILESIZE}/" {} \;
+find /etc/php5/ -type f -name 'php.ini' -exec sed -i "s/^expose_php.*/expose_php = Off/" {} \;
+find /etc/php5/ -type f -name 'php.ini' -exec sed -i "s/^disable_functions.*/disable_functions = exec,system,passthru,shell_exec,escapeshellarg,escapeshellcmd,proc_close,proc_open,dl,popen,show_source/" {} \;
 cat > /etc/php5/mods-available/apcu.ini <<END
 extension=apcu.so
 apc.enabled=1
