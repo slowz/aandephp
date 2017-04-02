@@ -55,21 +55,22 @@ Install: No install. Run the script
 
 
 
-**Run ./lighttphpa.sh as root**
+**Run ./aandephp.sh as root**
 
 ### Quick Install
 
     # Install git and clone AandEPHP
+    
     wget https://github.com/slowz/aandephp/archive/1.1.tar.gz
-    tar zxf v1.0.tar.gz
-    cd aandephp
+    tar zxf v1.1.tar.gz
+    cd aandephp*
     chmod +x aandephp.sh
 
 **You must set the options in options.conf**
 
 `./aandephp.sh -i`
 
-`./aandephp.sh -ad` ## adds /home/user/domain/public_html and adds info to lighttpd
+`./aandephp.sh -ad` ## adds /home/user/domain/public_html
 
 `./aandephp.sh -v` ## Show version
 

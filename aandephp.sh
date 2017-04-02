@@ -445,7 +445,7 @@ case "$1" in
 echo -e ""
 for option in -i -ad -v -dd
 do
-    echo -e "${COL_BLUE} bash lightmyphp.sh $option"
+    echo -e "${COL_BLUE} bash aandephp.sh $option"
     echo -e "${COL_RESET}"
 done
 ;;
