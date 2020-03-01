@@ -7,7 +7,7 @@
 # GPLV3
 ##########################################
 # Colors
-VER="1.0.1"
+VER="1.0.2"
 >install.log
 >install-error.log
 #echo -e "\t\t***** INSTALLED $(date +%B) $(date +%Y) *****"
@@ -25,8 +25,8 @@ COL_BLUE=$ESC_SEQ"34;01m"
 #COL_CYAN=$ESC_SEQ"36;01m"
 ## Path to php.ini
 SSHD_CONF="/etc/ssh/sshd_config"
-#PHP_INI_DIR="/etc/php5/apache2/php.ini"
-#PHP_FPM_INI_DIR="/etc/php5/fpm/php.ini"
+#PHP_INI_DIR="${PHPLC}/apache2/php.ini"
+#PHP_FPM_INI_DIR="${PHPLC}/fpm/php.ini"
 # Gen random string
 RANSTR=$(tr -cd '[:alnum:]' < /dev/urandom | fold -w5 | head -n1)
 #RANSTR=$RANDOM
@@ -45,15 +45,10 @@ function check_sanity {
     then
         die 'Must be run by root user!'
     fi
-    if [ "$HASEDIT" = "no" ]; 
+    if [ "$HASEDIT" = "no" ];
     then
         die "Please edit the options file!"
     fi
-    ## Allow Debian 8
-    #if ! grep -q "Debian GNU/Linux 7" /etc/issue
-    #then
-    #die "Distribution is not supported. Debian Wheezy only"
-    #fi
 }
 function die {
     echo "ERROR: $1" > /dev/null 1>&2
@@ -161,14 +156,14 @@ vm.min_free_kbytes = 16384
     aeinstall unattended-upgrades apt-listchanges
 
     if [ "$SSHKEYONLY" = "yes" ]; then
-        sed -i "s/.*RSAAuthentication.*/RSAAuthentication yes/g" ${SSHD_CONF} 		
-        sed -i "s/.*PubkeyAuthentication.*/PubkeyAuthentication yes/g" ${SSHD_CONF} 		
+        sed -i "s/.*RSAAuthentication.*/RSAAuthentication yes/g" ${SSHD_CONF}
+        sed -i "s/.*PubkeyAuthentication.*/PubkeyAuthentication yes/g" ${SSHD_CONF}
         sed -i "s/.*PasswordAuthentication.*/PasswordAuthentication no/g" ${SSHD_CONF}
         sed -i "s/.*X11Forwarding yes/X11Forwarding no/g" ${SSHD_CONF}
         printf "\nUseDNS no" >> ${SSHD_CONF}
         service ssh restart
     else
-        echo -e "${COL_BLUE} ssh password login active." 
+        echo -e "${COL_BLUE} ssh password login active."
         echo -e "${COL_RESET}"
     fi
     if [ "$IFIREWALL" = "yes" ]; then
@@ -195,13 +190,6 @@ vm.min_free_kbytes = 16384
     sed -i "s/ServerSignature.*/ServerSignature Off/g" /etc/apache2/conf-enabled/security.conf
     sed -i "s/Timeout 300/Timeout 30/g" /etc/apache2/apache2.conf
 
-    #Install suhosin
-    echo 'deb http://repo.suhosin.org/ debian-jessie main' >> /etc/apt/sources.list
-    wget https://sektioneins.de/files/repository.asc
-    apt-key add repository.asc
-    aeinstall php5-suhosin-extension
-    echo "suhosin.executor.func.blacklist = assert,unserialize,exec,popen,proc_open,passthru,shell_exec,system,hail,parse_str,mt_srand" >> /etc/php5/mods-available/suhosin.ini 
-    php5enmod suhosin
     aeinstall apt-transport-https
     aeinstall libpam-pwquality
     echo -e "APT::Periodic::Update-Package-Lists \"1\";\nAPT::Periodic::Unattended-Upgrade \"1\";\n" > /etc/apt/apt.conf.d/20auto-upgrades
@@ -227,17 +215,17 @@ END
     chown "$USERID":"$USERID" /home/"$USERID"/.my.cnf
 }
 function tune_php {
-    if [ -f /etc/php5/apache2/php.ini ]
+    if [ -f ${PHPLC}/apache2/php.ini ]
     then
         # Tweak fpm php.ini
-find /etc/php5/ -type f -name 'php.ini' -exec sed -i "s/^max_execution_time.*/max_execution_time = ${PHP_MAX_EXECUTION_TIME}/" {} \;
-find /etc/php5/ -type f -name 'php.ini' -exec sed -i "s/^memory_limit.*/memory_limit = ${PHP_MEMORY_LIMIT}/" {} \;
-find /etc/php5/ -type f -name 'php.ini' -exec sed -i "s/^max_input_time.*/max_input_time = ${PHP_MAX_INPUT_TIME}/" {} \;
-find /etc/php5/ -type f -name 'php.ini' -exec sed -i "s/^post_max_size.*/post_max_size = ${PHP_POST_MAX_SIZE}/" {} \;
-find /etc/php5/ -type f -name 'php.ini' -exec sed -i "s/^upload_max_filesize.*/upload_max_filesize = ${PHP_UPLOAD_MAX_FILESIZE}/" {} \;
-find /etc/php5/ -type f -name 'php.ini' -exec sed -i "s/^expose_php.*/expose_php = Off/" {} \;
-find /etc/php5/ -type f -name 'php.ini' -exec sed -i "s/^disable_functions.*/disable_functions = exec,system,passthru,shell_exec,escapeshellarg,escapeshellcmd,proc_close,proc_open,dl,popen,show_source/" {} \;
-cat > /etc/php5/mods-available/apcu.ini <<END
+find ${PHPLC}/ -type f -name 'php.ini' -exec sed -i "s/^max_execution_time.*/max_execution_time = ${PHP_MAX_EXECUTION_TIME}/" {} \;
+find ${PHPLC}/ -type f -name 'php.ini' -exec sed -i "s/^memory_limit.*/memory_limit = ${PHP_MEMORY_LIMIT}/" {} \;
+find ${PHPLC}/ -type f -name 'php.ini' -exec sed -i "s/^max_input_time.*/max_input_time = ${PHP_MAX_INPUT_TIME}/" {} \;
+find ${PHPLC}/ -type f -name 'php.ini' -exec sed -i "s/^post_max_size.*/post_max_size = ${PHP_POST_MAX_SIZE}/" {} \;
+find ${PHPLC}/ -type f -name 'php.ini' -exec sed -i "s/^upload_max_filesize.*/upload_max_filesize = ${PHP_UPLOAD_MAX_FILESIZE}/" {} \;
+find ${PHPLC}/ -type f -name 'php.ini' -exec sed -i "s/^expose_php.*/expose_php = Off/" {} \;
+find ${PHPLC}/ -type f -name 'php.ini' -exec sed -i "s/^disable_functions.*/disable_functions = exec,system,passthru,shell_exec,escapeshellarg,escapeshellcmd,proc_close,proc_open,dl,popen,show_source/" {} \;
+cat > ${PHPLC}/mods-available/apcu.ini <<END
 extension=apcu.so
 apc.enabled=1
 apc.shm_segments=1
@@ -286,14 +274,14 @@ function install_prefered {
     echo "postfix postfix/main_mailer_type select Internet Site" | debconf-set-selections
     echo "postfix postfix/mailname string $HNAME" | debconf-set-selections
     echo "postfix postfix/destinations string localhost.localdomain, localhost" | debconf-set-selections
-	aeinstall expect postfix libapache2-mod-php5 libapache2-mod-rpaf lsb-release man wget dialog curl apache2 php5 php5-cgi php5-gd php5-apcu php5-curl php5-gd php5-intl php5-mcrypt php5-imap php-gettext php5-mysql php5-sqlite php5-cli php-pear sqlite3 php5-imagick fail2ban python-gamin bsd-mailx libapache2-modsecurity geoip-database-contrib bsdutils dnsutils tmux nano wget htop iftop vim-nox grc xtail mc iotop zip unzip sqlite3 ca-certificates ncdu rkhunter goaccess
-    php5enmod pdo
-    php5enmod mcrypt
-    php5enmod imap
+	aeinstall expect postfix libapache2-mod-php libapache2-mod-rpaf lsb-release man wget dialog curl apache2 php php-cgi php-gd php-apcu php-curl php-gd php-intl php-imap php-gettext php-mysql php-sqlite3 php-cli php-pear sqlite3 php-imagick fail2ban python-gamin bsd-mailx libapache2-mod-security2 geoip-database-extra bsdutils dnsutils tmux nano wget htop iftop vim-nox grc xtail mc iotop zip unzip sqlite3 ca-certificates ncdu rkhunter goaccess
+    phpenmod pdo
+    phpenmod mcrypt
+    phpenmod imap
     # Disable opcache causing 500 errors
-    php5dismod opcache
+    phpdismod opcache
 	aeinstall nginx nginx-module-geoip
-    rm -rf /etc/nginx/nginx.conf 
+    rm -rf /etc/nginx/nginx.conf
     cp ./config/nginx.conf  /etc/nginx/nginx.conf
     a2enmod rewrite
     a2enmod security2
@@ -342,7 +330,7 @@ function deldomain {
     echo "Domain $DELDOMAIN was deleted. But we've saved the log files for the domain'"
 }
 function install_letsei {
-    aeinstall letsencrypt python-certbot-nginx -t jessie-backports
+    aeinstall python-certbot-nginx
     #/usr/bin/certbot --nginx --email "$ROOTEMAIL" -d "$DOMAIN" -d www."$DOMAIN" --agree-tos
 }
 function install {
@@ -363,17 +351,17 @@ vm.vfs_cache_pressure = 50
 " >> /etc/sysctl.conf
     fi
 echo "
-deb http://http.us.debian.org/debian/ jessie main contrib non-free
-deb-src http://http.us.debian.org/debian/ jessie main contrib non-free
+deb http://http.us.debian.org/debian/ buster main contrib non-free
+deb-src http://http.us.debian.org/debian/ buster main contrib non-free
 
-deb http://security.debian.org/ jessie/updates main contrib non-free
-deb-src http://security.debian.org/ jessie/updates main contrib non-free
+deb http://security.debian.org/ buster/updates main contrib non-free
+deb-src http://security.debian.org/ buster/updates main contrib non-free
 
-#jessie-updates, previously known as 'volatile'
-deb http://http.us.debian.org/debian/ jessie-updates main contrib non-free
-deb-src http://http.us.debian.org/debian/ jessie-updates main contrib non-free
-deb http://ftp.debian.org/debian jessie-backports main contrib non-free
-deb http://nginx.org/packages/debian/ jessie nginx
+#buster-updates
+deb http://http.us.debian.org/debian/ buster-updates main contrib non-free
+deb-src http://http.us.debian.org/debian/ buster-updates main contrib non-free
+deb http://ftp.debian.org/debian buster-backports main contrib non-free
+deb http://nginx.org/packages/debian/ buster nginx
 " > /etc/apt/sources.list
     wget http://nginx.org/keys/nginx_signing.key  -O- | apt-key add -
     cp ./tpl/bashrc-root /root/.bashrc

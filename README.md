@@ -4,7 +4,7 @@ AandEPHP
 
 ![alt aandePHP](http://nwabytes.com/AandEPHP.png)
 
-Apache-Nginx(proxy) Mysql PHP Installer for Debian 8
+Apache-Nginx(proxy) Mysql PHP Installer for Debian 10
 
 Low memory usage
 
@@ -42,9 +42,9 @@ Setup logwatch with offsite email
 
 Mysql default storage myisam
 
-Tested on Debian 8
+Tested on Debian 10
 
-Installs Apache2.4, Nginx (as proxy), Mariadb and PHP5 from debian repos.
+Installs Apache2.4, Nginx (as proxy), Mariadb and PHP7.3 from debian repos.
 Option for installing webmin from repos.
 Setting up user and virutal host in /home/user/domain.com
 Random mysql root password in /root/.my.cnf and mysql user for the added domain.
@@ -61,8 +61,8 @@ Install: No install. Run the script
 
     # Install git and clone AandEPHP
     
-    wget https://github.com/slowz/aandephp/archive/1.1.tar.gz
-    tar zxf v1.1.tar.gz
+    wget https://github.com/slowz/aandephp/archive/1.2.tar.gz
+    tar zxf v1.2.tar.gz
     cd aandephp*
     chmod +x aandephp.sh
 
@@ -74,4 +74,4 @@ Install: No install. Run the script
 
 `./aandephp.sh -v` ## Show version
 
-`./aandephp.sh -dd` ## delete domain
+`./aandephp.sh -dd` ## Delete domain
